@@ -89,7 +89,7 @@ describe('update', () => {
           currentPlayer: '0',
           currentPlayerMoves: 0,
           numPlayers: 2,
-          phase: 'default',
+          phase: '',
           playOrder: ['0', '1'],
           playOrderPos: 0,
           stats: {
@@ -109,7 +109,7 @@ describe('update', () => {
         currentPlayer: '1',
         currentPlayerMoves: 0,
         numPlayers: 2,
-        phase: 'default',
+        phase: '',
         playOrder: ['0', '1'],
         playOrderPos: 1,
         stats: {
