@@ -91,7 +91,7 @@ describe('update', () => {
           phase: '',
           playOrder: ['0', '1'],
           playOrderPos: 0,
-          turn: 0,
+          turn: 1,
         },
       },
       _redo: [],
@@ -106,7 +106,7 @@ describe('update', () => {
         phase: '',
         playOrder: ['0', '1'],
         playOrderPos: 1,
-        turn: 1,
+        turn: 2,
       },
     });
 

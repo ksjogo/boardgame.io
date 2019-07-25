@@ -300,9 +300,9 @@ describe('event dispatchers', () => {
     const game = {};
     const client = Client({ game });
     expect(Object.keys(client.events)).toEqual(['endTurn']);
-    expect(client.getState().ctx.turn).toBe(0);
-    client.events.endTurn();
     expect(client.getState().ctx.turn).toBe(1);
+    client.events.endTurn();
+    expect(client.getState().ctx.turn).toBe(2);
   });
 
   test('all events', () => {
@@ -320,9 +320,9 @@ describe('event dispatchers', () => {
       'endGame',
       'setActionPlayers',
     ]);
-    expect(client.getState().ctx.turn).toBe(0);
-    client.events.endTurn();
     expect(client.getState().ctx.turn).toBe(1);
+    client.events.endTurn();
+    expect(client.getState().ctx.turn).toBe(2);
   });
 
   test('no events', () => {
@@ -429,13 +429,13 @@ describe('log handling', () => {
         action: makeMove('A', [], '0'),
         _stateID: 0,
         phase: '',
-        turn: 0,
+        turn: 1,
       },
       {
         action: makeMove('A', [], '0'),
         _stateID: 1,
         phase: '',
-        turn: 0,
+        turn: 1,
       },
     ]);
   });
