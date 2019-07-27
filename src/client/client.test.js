@@ -299,7 +299,7 @@ describe('event dispatchers', () => {
   test('default', () => {
     const game = {};
     const client = Client({ game });
-    expect(Object.keys(client.events)).toEqual(['endTurn']);
+    expect(Object.keys(client.events)).toEqual(['endTurn', 'setStage']);
     expect(client.getState().ctx.turn).toBe(1);
     client.events.endTurn();
     expect(client.getState().ctx.turn).toBe(2);
@@ -310,7 +310,6 @@ describe('event dispatchers', () => {
       events: {
         endPhase: true,
         endGame: true,
-        setActionPlayers: true,
       },
     };
     const client = Client({ game });
@@ -318,7 +317,7 @@ describe('event dispatchers', () => {
       'endTurn',
       'endPhase',
       'endGame',
-      'setActionPlayers',
+      'setStage',
     ]);
     expect(client.getState().ctx.turn).toBe(1);
     client.events.endTurn();
@@ -330,6 +329,7 @@ describe('event dispatchers', () => {
       events: {
         endPhase: false,
         endTurn: false,
+        setStage: false,
       },
     };
     const client = Client({ game });
