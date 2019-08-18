@@ -9,6 +9,124 @@
 import { FnWrap } from '../plugins/main';
 import { Flow } from './flow';
 
+export type PlayerID = string;
+export type PhaseID = string;
+
+export type Plugin = object;
+
+export interface Context {
+  gameover: any;
+  numPlayers: number;
+  turn: number;
+  currentPlayer: PlayerID;
+  currentPlayerMoves: number;
+  random: {
+    Shuffle: <A extends any[]>(array: A) => A;
+  };
+  actionPlayers: PlayerID[];
+  playOrder: PlayerID[];
+  playOrderPos: number;
+  stats: {
+    turn: {
+      numMoves: Partial<Record<PlayerID, number>>;
+      allPlayed: boolean;
+    };
+    phase: {
+      numMoves: Partial<Record<PlayerID, number>>;
+      allPlayed: boolean;
+    };
+  };
+  allPlayed: boolean;
+  phase: PhaseID;
+  prevPhase?: PhaseID;
+  playerID: PlayerID;
+  events: {
+    endGame: () => void;
+    endPhase: (options?: { next: PhaseID }) => void;
+    endTurn: (options?: { next: PlayerID }) => void;
+  };
+}
+
+export interface GameFlowPhase<GR, G = ExtractG<GR>, M = ExtractM<GR>> {
+  endPhaseIf?: (G: G, ctx: Context) => boolean | { next: PhaseID };
+  next?: PhaseID;
+  endTurnIf?: (G: G, ctx: Context) => boolean | { next: PlayerID };
+  onTurnBegin?: (G: G, ctx: Context) => G | void;
+  onTurnEnd?: (G: G, ctx: Context) => G | void;
+  onMove?: (G: G, ctx: Context) => G | void;
+  onPhaseBegin?: (G: G, ctx: Context) => G | void;
+  onPhaseEnd?: (G: G, ctx: Context) => G | void;
+  allowedMoves?: (keyof M)[];
+}
+
+export interface GameFlow<GR, G = ExtractG<GR>> {
+  moveNames?: string[];
+  endTurn?: boolean;
+  endPhase?: boolean;
+  endGame?: boolean;
+  turnOrder?: object;
+  startingPhase?: PhaseID;
+  phases?: Record<PhaseID, GameFlowPhase<GR>>;
+  endTurnIf?: (G: G, ctx: Context) => boolean | { next: PlayerID };
+  onTurnBegin?: (G: G, ctx: Context) => G | void;
+  onTurnEnd?: (G: G, ctx: Context) => G | void;
+  onMove?: (G: G, ctx: Context) => G | void;
+
+  getMove?: any;
+
+  processGameEvent?: any;
+}
+
+export type Move<GameState, Args extends any[] = any[]> = (
+  G: GameState,
+  ctx: Context,
+  ...args: Args
+) => GameState | void;
+
+export type MovesRecord<GameState> = Record<string, Move<GameState>>;
+
+export interface GameConfig<
+  GameState extends object,
+  Moves extends Record<string, Move<GameState>>,
+  GameStatePlayerView extends object
+> {
+  ai?: any;
+  seed?: string;
+  name?: string;
+  setup?(ctx: Context, setupData: object): GameState;
+  moves?: Moves;
+  flow?: GameFlow<GameReducer<GameState, Moves, GameStatePlayerView>>;
+  playerView?(
+    G: GameState,
+    ctx: Context,
+    playerID: PlayerID
+  ): GameStatePlayerView;
+  plugins?: Plugin[];
+  turn?: {
+    moveLimit?: number;
+  };
+  endIf?: (G: GameState, ctx: Context) => object | undefined;
+}
+
+export interface GameReducer<
+  GameState extends object,
+  Moves extends Record<string, Move<GameState>>,
+  PlayerView extends object
+> extends GameConfig<GameState, Moves, PlayerView> {
+  moveNames: (keyof Moves)[];
+  processMove(state: GameState, any, ctx: Context): GameState;
+}
+
+export type ExtractG<GR> = GR extends GameReducer<infer G, infer M, infer PV>
+  ? G
+  : never;
+export type ExtractM<GR> = GR extends GameReducer<infer G, infer M, infer PV>
+  ? M
+  : never;
+export type ExtractPV<GR> = GR extends GameReducer<infer G, infer M, infer PV>
+  ? PV
+  : never;
+
 /**
  * Game
  *
@@ -88,17 +206,29 @@ import { Flow } from './flow';
  *                            setup: (G, ctx) => G,
  *                          }
  */
-export function Game(game) {
+export function Game<
+  GameState extends object,
+  Moves extends Record<string, Move<GameState>>,
+  GameStatePlayerView extends object
+>(
+  game: GameConfig<GameState, Moves, GameStatePlayerView>
+): GameReducer<GameState, Moves, GameStatePlayerView> {
+  function isGR(
+    game: any
+  ): game is GameReducer<GameState, Moves, GameStatePlayerView> {
+    return game.processMove !== undefined;
+  }
+
   // The Game() function has already been called on this
   // config object, so just pass it through.
-  if (game.processMove !== undefined) {
+  if (isGR(game)) {
     return game;
   }
 
   if (game.name === undefined) game.name = 'default';
-  if (game.setup === undefined) game.setup = () => ({});
-  if (game.moves === undefined) game.moves = {};
-  if (game.playerView === undefined) game.playerView = G => G;
+  if (game.setup === undefined) game.setup = () => ({} as any);
+  if (game.moves === undefined) game.moves = {} as any;
+  if (game.playerView === undefined) game.playerView = G => G as any;
   if (game.plugins === undefined) game.plugins = [];
 
   if (!game.flow || game.flow.processGameEvent === undefined) {

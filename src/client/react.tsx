@@ -10,6 +10,50 @@ import React from 'react';
 import { Debug } from './debug/debug';
 import { Client as RawClient } from './client';
 
+import { ComponentType } from 'react';
+import {
+  Context,
+  PlayerID,
+  GameReducer,
+  MovesRecord,
+  ExtractM,
+  ExtractPV,
+} from '../core/game';
+
+export interface BoardProps<GR> {
+  G: ExtractPV<GR>;
+  ctx: Context;
+  moves: ExtractM<GR>;
+  gameID: string;
+  playerID: PlayerID;
+  isActive: boolean;
+  isMultiplayer: boolean;
+  isConnected: boolean;
+}
+
+export interface ClientOptions<GR> {
+  ai?: {
+    visualize?: boolean;
+  };
+  board?: ComponentType<BoardProps<GR>>;
+  debug?: {
+    showGameInfo?: boolean;
+    dockControls?: boolean;
+  };
+  enhancer?: any;
+  game: GR;
+  loading?: ComponentType;
+  multiplayer?: boolean | { server: string } | { local: boolean };
+  numPlayers?: number;
+}
+
+export interface ClientProps {
+  credentials?: string;
+  debug?: boolean;
+  gameID?: string;
+  playerID?: string;
+}
+
 /**
  * Client
  *
@@ -31,7 +75,12 @@ import { Client as RawClient } from './client';
  *   and dispatch actions such as MAKE_MOVE, GAME_EVENT, RESET,
  *   UNDO and REDO.
  */
-export function Client(opts) {
+export function Client<
+  GameState extends object,
+  Moves extends MovesRecord<GameState>,
+  GameStatePlayerView extends object,
+  GR = GameReducer<GameState, Moves, GameStatePlayerView>
+>(opts: { game: GR } & ClientOptions<GR>) {
   let {
     game,
     numPlayers,
@@ -50,27 +99,13 @@ export function Client(opts) {
     loading = Loading;
   }
 
-  type WrappedBoardProps = {
-    // The ID of a game to connect to.
-    // Only relevant in multiplayer.
-    gameID: string;
-    // The ID of the player associated with this client.
-    // Only relevant in multiplayer.
-    playerID: string;
-    // This client's authentication credentials.
-    // Only relevant in multiplayer.
-    credentials: string;
-    // Enable / disable the Debug UI.
-    debug: boolean;
-  };
-
   /*
    * WrappedBoard
    *
    * The main React component that wraps the passed in
    * board component and adds the API to its props.
    */
-  return class WrappedBoard extends React.Component<WrappedBoardProps> {
+  return class WrappedBoard extends React.Component<ClientProps> {
     static defaultProps = {
       gameID: 'default',
       playerID: null,
@@ -78,10 +113,10 @@ export function Client(opts) {
       debug: true,
     };
 
-    gameID: WrappedBoardProps['gameID'];
-    playerID: WrappedBoardProps['playerID'];
-    credentials: WrappedBoardProps['credentials'];
-    debug: WrappedBoardProps['debug'];
+    gameID: ClientProps['gameID'];
+    playerID: ClientProps['playerID'];
+    credentials: ClientProps['credentials'];
+    debug: ClientProps['debug'];
 
     client: ReturnType<RawClient>;
 
@@ -180,7 +215,7 @@ export function Client(opts) {
         });
       }
 
-      if (debug !== false && debugProp) {
+      if ((debug as any) !== false && debugProp) {
         const showGameInfo = typeof debug === 'object' && debug.showGameInfo;
         const dockControls = typeof debug === 'object' && debug.dockControls;
         _debug = React.createElement(Debug, {
